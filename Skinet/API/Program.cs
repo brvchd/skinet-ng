@@ -1,4 +1,6 @@
+using Core.Interfaces;
 using Infrastructure.Data;
+using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +14,8 @@ builder.Services.AddDbContext<StoreContext>(
         opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
     });
 
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -20,10 +24,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-await app.InitializeDbAsync();
 
 app.UseAuthorization();
 
 app.MapControllers();
+
+await app.InitializeDbAsync<Program>();
 
 app.Run();
