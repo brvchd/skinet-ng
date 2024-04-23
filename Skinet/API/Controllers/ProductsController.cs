@@ -1,5 +1,8 @@
-﻿using Core.Entities;
+﻿using API.DTOs;
+using AutoMapper;
+using Core.Entities;
 using Core.Interfaces;
+using Core.Specifications;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -8,35 +11,49 @@ namespace API.Controllers;
 [Route("api/products")]
 public class ProductsController : ControllerBase
 {
-    private readonly IProductRepository _productRepository;
+    private readonly IGenericRepository<ProductBrand> _productBrandRepo;
+    private readonly IGenericRepository<ProductType> _productTypeRepo;
+    private readonly IGenericRepository<Product> _productRepo;
+    private readonly IMapper _mapper;
 
-    public ProductsController(IProductRepository productRepository)
+    public ProductsController(
+        IGenericRepository<Product> productRepo,
+        IGenericRepository<ProductType> productTypeRepo,
+        IGenericRepository<ProductBrand> productBrandRepo,
+        IMapper mapper)
     {
-        _productRepository = productRepository;
+        _productRepo = productRepo ?? throw new NullReferenceException();
+        _productTypeRepo = productTypeRepo ?? throw new NullReferenceException();
+        _productBrandRepo = productBrandRepo ?? throw new NullReferenceException();
+        _mapper = mapper ?? throw new NullReferenceException();
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<Product>>> GetProducts()
+    public async Task<ActionResult<List<ProductToReturnDto>>> GetProducts()
     {
-        return Ok(await _productRepository.GetProductsAsync());
+        var spec = new ProductsWithTypesAndBrandsSpecifications();
+        var products = await _productRepo.ListAsync(spec);
+        return Ok(_mapper.Map<IReadOnlyList<Product>, IReadOnlyList<ProductToReturnDto>>(products));
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<Product>> GetProduct(int id)
+    public async Task<ActionResult<ProductToReturnDto>> GetProduct(int id)
     {
-        var product = await _productRepository.GetProductByIdAsync(id);
-        return product is not null ? Ok(product) : NotFound();
+        var spec = new ProductsWithTypesAndBrandsSpecifications(id);
+        var product = await _productRepo.GetEntityWithSpecAsync(spec);
+        if (product is null) return NotFound(); 
+        return Ok(_mapper.Map<Product, ProductToReturnDto>(product));
     }
-    
+
     [HttpGet("brands")]
     public async Task<ActionResult<Product>> GetProductBrands()
     {
-        return Ok(await _productRepository.GetProductsBrands());
+        return Ok(await _productBrandRepo.ListAllAsync());
     }
-    
+
     [HttpGet("types")]
     public async Task<ActionResult<Product>> GetProductTypes()
     {
-        return Ok(await _productRepository.GetProductsTypes());
+        return Ok(await _productTypeRepo.ListAllAsync());
     }
 }
