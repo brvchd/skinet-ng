@@ -1,24 +1,19 @@
-using Core.Interfaces;
+using API.Extensions;
+using API.Middleware;
 using Infrastructure.Data;
-using Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
-builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<StoreContext>(
-    opt =>
-    {
-        opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
-    });
-
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddApplicationServices(builder.Configuration);
 
 var app = builder.Build();
+
+// Handle 500s errors
+app.UseMiddleware<ExceptionMiddleware>();
+ 
+// Regenerate object response when errors occur to unify the output
+app.UseStatusCodePagesWithReExecute("/errors/{0}");
 
 if (app.Environment.IsDevelopment())
 {
