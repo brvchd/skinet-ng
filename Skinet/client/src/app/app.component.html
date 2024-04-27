@@ -1,12 +1,5 @@
 <app-nav-bar/>
-
 <div class="container" style="margin-top: 140px;">
-  <h1>Welcome to {{ title }}</h1>
-  <ul>
-    <!-- ngFor is structural directive -->
-    <li class="list-unstyled" *ngFor="let product of products; index as i">
-      {{ i + 1 }}){{ product.name }}
-    </li>
-  </ul>
+  <app-shop></app-shop>
 </div>
 
